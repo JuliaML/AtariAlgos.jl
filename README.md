@@ -6,6 +6,14 @@
 
 Higher level framework for interacting with the [ArcadeLearningEnvironment](https://github.com/nowozin/ArcadeLearningEnvironment.jl).
 
+### Install
+
+Follow the setup instructions for ArcadeLearningEnvironment.jl, then:
+
+```
+Pkg.clone("https://github.com/tbreloff/AtariAlgos.jl.git")
+```
+
 ### Example
 
 ```
