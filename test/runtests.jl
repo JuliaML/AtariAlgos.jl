@@ -4,7 +4,9 @@ using Base.Test
 # write your own tests here
 @test 1 == 1
 
-
+game = Game("/home/tom/atari/Breakout.bin")
+player = RandomPlayer()
+play(game, player)
 
 # #####################################################################
 # # modeled on the README from ArcadeLearningEnvironment.jl
