@@ -6,7 +6,11 @@ using Base.Test
 
 game = Game("/home/tom/atari/Breakout.bin")
 player = RandomPlayer()
-play(game, player)
+
+numEpisodes = 1
+for i in 1:numEpisodes
+    play(game, player)
+end
 
 # #####################################################################
 # # modeled on the README from ArcadeLearningEnvironment.jl

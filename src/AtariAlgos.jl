@@ -1,9 +1,10 @@
 module AtariAlgos
 
 using ArcadeLearningEnvironment
+import Images
+import ImageView
 
 export
-    ROM,
     GameState,
     Ready,
     Running,
@@ -12,20 +13,8 @@ export
     Game,
     AbstractPlayer,
     RandomPlayer,
+    screen,
     play
-
-# -----------------------------------------------
-
-# type ROM
-#     ale::ALEPtr
-#     isopen::Bool
-
-#     function ROM(romfile::AbstractString)
-#         ale = ALE_new()
-#         loadROM(ale, romfile)
-#         new(ale, true)
-#     end
-# end
 
 # -----------------------------------------------
 
@@ -38,11 +27,13 @@ You should `close(game)` explicitly.
 type Game
     ale::ALEPtr
     state::GameState
+    screen  # raw screen data from the most recent frame
+    canvas  # when updating on screen, write to this canvas
     
     function Game(romfile::AbstractString)
         ale = ALE_new()
         loadROM(ale, romfile)
-        new(ale, Ready)
+        new(ale, Ready, getScreen(ale), nothing)
     end
 end
 
@@ -55,40 +46,18 @@ function Base.reset(game::Game)
     reset_game(game.ale)
 end
 
-"This is the main loop for one game (episode)"
-function play(game::Game, player::AbstractPlayer)
-    # make sure we can play
-    game.state == Closed  && error("Can't play... ROM closed.")
-    game.state == Running && error("Game already running.")
+"Convert the raw screen data into an Image"
+function screen(game::Game)
+    Images.Image(reshape(game.screen, Int(getScreenWidth(game.ale)), Int(getScreenHeight(game.ale)))' / 255)
+end
 
-    # reset if necessary
-    if game.state == Finished
-        reset(game)
-        reset(player)
+function Base.display(game::Game)
+    img = screen(game)
+    if game.canvas == nothing
+        game.canvas, _ = ImageView.view(img)
+    else
+        ImageView.view(game.canvas, img)
     end
-
-    # initialize
-    game.state = Running
-    screendata = getScreen(game.ale)
-
-    # play the game
-    while game.state == Running
-        # get the screen data
-        screendata = getScreen!(game.ale, screendata)
-
-        # request an action
-        action = onframe(game, player, screendata)
-
-        # give a reward
-        onreward(act(game.ale, action))
-
-        # game over?
-        if game_over(game.ale)
-            game.state = Finished
-        end
-    end
-
-    ongameover(game, player)
 end
 
 # -----------------------------------------------
@@ -99,7 +68,7 @@ A player (automated, or not) which will play the game.  Should implement the fol
 ```
 Base.reset(player::MyPlayer) --> nothing
 onreward(game::Game, player::MyPlayer, reward) --> nothing
-onframe(game::Game, player::MyPlayer, screendata) --> action
+onframe(game::Game, player::MyPlayer) --> action
 ongameover(game::Game, player::MyPlayer) --> nothing
 ```
 """
@@ -126,7 +95,7 @@ function onreward(game::Game, player::RandomPlayer, reward::Real)
     player.score += reward
 end
 
-function onframe(game::Game, player::RandomPlayer, screendata)
+function onframe(game::Game, player::RandomPlayer)
     # update player state
     player.nframes += 1
 
@@ -135,15 +104,50 @@ function onframe(game::Game, player::RandomPlayer, screendata)
 end
 
 function ongameover(game::Game, player::RandomPlayer)
+    info("Game Over.  NumFrames: $(player.nframes) Score: $(player.score)")
 end
 
 # -----------------------------------------------
 
-# -----------------------------------------------
 
-# -----------------------------------------------
+"This is the main loop for one game (episode)"
+function play(game::Game, player::AbstractPlayer; show_screen::Bool = true)
+    # make sure we can play
+    game.state == Closed  && error("Can't play... ROM closed.")
+    game.state == Running && error("Game already running.")
 
-# -----------------------------------------------
+    # reset if necessary
+    if game.state == Finished
+        reset(game)
+        reset(player)
+    end
+
+    # initialize
+    game.state = Running
+
+    # play the game
+    while game.state == Running
+        # get the screen data
+        getScreen!(game.ale, game.screen)
+
+        # show it?
+        show_screen && display(game)
+
+        # request an action
+        action = onframe(game, player)
+
+        # give a reward
+        reward = act(game.ale, action)
+        onreward(game, player, reward)
+
+        # game over?
+        if game_over(game.ale)
+            game.state = Finished
+        end
+    end
+
+    ongameover(game, player)
+end
 
 # -----------------------------------------------
 
