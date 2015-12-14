@@ -3,8 +3,9 @@ module AtariAlgos
 import ArcadeLearningEnvironment
 const ALE = ArcadeLearningEnvironment
 
+import Colors, Images
+
 try
-    @eval import Images
     @eval import ImageView
 catch err
     warn("Error while importing... can't display screen: $err")
@@ -39,13 +40,20 @@ type Game
     reward::Float64
     score::Float64
     nframes::Int
-    screen  # raw screen data from the most recent frame
+    width::Int
+    height::Int
+    rawscreen::Vector{Cuchar}  # raw screen data from the most recent frame
+    screen::Images.Image
     canvas  # when updating on screen, write to this canvas
     
     function Game(romfile::AbstractString)
         ale = ALE.ALE_new()
         ALE.loadROM(ale, romfile)
-        new(ale, Ready, 0, false, 0., 0., 0, ALE.getScreen(ale), nothing)
+        w = ALE.getScreenWidth(ale)
+        h = ALE.getScreenHeight(ale)
+        rawscreen = Array(Cuchar, w * h * 3)
+        screen = Images.Image(fill(Colors.RGB(0,0,0), h, w))
+        new(ale, Ready, 0, false, 0., 0., 0, w, h, rawscreen, screen, nothing)
     end
 end
 
@@ -66,16 +74,18 @@ function Base.reset(game::Game)
     game.nframes = 0
 end
 
-"Convert the raw screen data into an Image"
-function screen(game::Game)
-    Images.Image(reshape(game.screen,
-                         Int(ALE.getScreenWidth(game.ale)),
-                         Int(ALE.getScreenHeight(game.ale))
-                        )' / 255)
-end
+# "Convert the raw screen data into an Image"
+# function screen(game::Game)
+#     Images.Image(reshape(game.screen,
+#                          3,
+#                          Int(ALE.getScreenWidth(game.ale)),
+#                          Int(ALE.getScreenHeight(game.ale))
+#                         )' / 255)
+# end
 
 function Base.display(game::Game)
-    img = screen(game)
+    # img = screen(game)
+    img = game.screen
     if game.canvas == nothing
         game.canvas, _ = ImageView.view(img)
     else
@@ -145,7 +155,18 @@ function play(game::Game, player::AbstractPlayer; show_screen::Bool = true)
     # play the game
     while game.state == Running
         # get the screen data
-        ALE.getScreen!(game.ale, game.screen)
+        # ALE.getScreen!(game.ale, game.screen)
+        ALE.getScreenRGB(game.ale, game.rawscreen)
+
+        # convert to Image
+        idx = 1
+        for i in 1:game.height, j in 1:game.width #, k in 1:3
+            # game.screen[i,j][k] = game.rawscreen[idx] / 255
+            game.screen[i,j] = Colors.RGB(game.rawscreen[idx],
+                                          game.rawscreen[idx + 1],
+                                          game.rawscreen[idx + 2])
+            idx += 3
+        end
 
         # show it?
         show_screen && display(game)
