@@ -1,6 +1,6 @@
 module AtariAlgos
 
-using ArcadeLearningEnvironment
+import ArcadeLearningEnvironment
 const ALE = ArcadeLearningEnvironment
 
 try
@@ -11,6 +11,7 @@ catch err
 end
 
 export
+    ALE,
     GameState,
     Ready,
     Running,
