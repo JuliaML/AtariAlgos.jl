@@ -1,8 +1,14 @@
 module AtariAlgos
 
 using ArcadeLearningEnvironment
-import Images
-import ImageView
+const ALE = ArcadeLearningEnvironment
+
+try
+    @eval import Images
+    @eval import ImageView
+catch err
+    warn("Error while importing... can't display screen: $err")
+end
 
 export
     GameState,
@@ -27,28 +33,44 @@ You should `close(game)` explicitly.
 type Game
     ale::ALEPtr
     state::GameState
+    lives::Int
+    died::Bool
+    reward::Float64
+    score::Float64
+    nframes::Int
     screen  # raw screen data from the most recent frame
     canvas  # when updating on screen, write to this canvas
     
     function Game(romfile::AbstractString)
-        ale = ALE_new()
-        loadROM(ale, romfile)
-        new(ale, Ready, getScreen(ale), nothing)
+        ale = ALE.ALE_new()
+        ALE.loadROM(ale, romfile)
+        new(ale, Ready, 0, false, 0., 0., 0, ALE.getScreen(ale), nothing)
     end
 end
 
+Base.string(game::Game) = "Game($(game.state)){lives=$(game.lives), died=$(game.died), reward=$(game.reward), score=$(game.score), nframe=$(game.nframes)}"
+Base.print(io::IO, game::Game) = print(io, string(game))
+
 function Base.close(game::Game)
     game.state = Closed
-    ALE_del(game.ale)
+    ALE.ALE_del(game.ale)
 end
 
 function Base.reset(game::Game)
-    reset_game(game.ale)
+    ALE.reset_game(game.ale)
+    game.lives = 0
+    game.died = false
+    game.reward = 0
+    game.score = 0
+    game.nframes = 0
 end
 
 "Convert the raw screen data into an Image"
 function screen(game::Game)
-    Images.Image(reshape(game.screen, Int(getScreenWidth(game.ale)), Int(getScreenHeight(game.ale)))' / 255)
+    Images.Image(reshape(game.screen,
+                         Int(ALE.getScreenWidth(game.ale)),
+                         Int(ALE.getScreenHeight(game.ale))
+                        )' / 255)
 end
 
 function Base.display(game::Game)
@@ -74,38 +96,43 @@ ongameover(game::Game, player::MyPlayer) --> nothing
 """
 abstract AbstractPlayer
 
+Base.reset(player::AbstractPlayer)              = info("onreset: $player")
+onreward(game::Game, player::AbstractPlayer)    = info("onreward: $game $player")
+onframe(game::Game, player::AbstractPlayer)     = info("onframe: $game $player")
+ongameover(game::Game, player::AbstractPlayer)  = info("ongameover: $game $player")
+
 # -----------------------------------------------
 
 "Takes random actions... useful to see how to implement your own"
 type RandomPlayer <: AbstractPlayer
-    reward::Float64  # the last reward
-    score::Float64
-    nframes::Int
+    # reward::Float64  # the last reward
+    # score::Float64
+    # nframes::Int
 end
-RandomPlayer() = RandomPlayer(0.0, 0.0, 0)
+# RandomPlayer() = RandomPlayer(0.0, 0.0, 0)
 
-function Base.reset(player::RandomPlayer)
-    player.reward = 0.0
-    player.score = 0.0
-    player.nframes = 0
+# function Base.reset(player::RandomPlayer)
+#     # player.reward = 0.0
+#     # player.score = 0.0
+#     # player.nframes = 0
+# end
+
+function onreward(game::Game, player::RandomPlayer)
+    # player.reward = reward
+    # player.score += reward
+    if game.died
+        info("DIED: $game $player")
+    end
 end
 
-function onreward(game::Game, player::RandomPlayer, reward::Real)
-    player.reward = reward
-    player.score += reward
-end
-
+# return an action to take
 function onframe(game::Game, player::RandomPlayer)
-    # update player state
-    player.nframes += 1
-
-    # return an action to take
-    rand(getLegalActionSet(game.ale))
+    rand(ALE.getMinimalActionSet(game.ale))
 end
 
-function ongameover(game::Game, player::RandomPlayer)
-    info("Game Over.  NumFrames: $(player.nframes) Score: $(player.score)")
-end
+# function ongameover(game::Game, player::RandomPlayer)
+#     # info("Game Over.  NumFrames: $(player.nframes) Score: $(player.score)")
+# end
 
 # -----------------------------------------------
 
@@ -124,24 +151,35 @@ function play(game::Game, player::AbstractPlayer; show_screen::Bool = true)
 
     # initialize
     game.state = Running
+    game.lives = ALE.lives(game.ale)
 
     # play the game
     while game.state == Running
         # get the screen data
-        getScreen!(game.ale, game.screen)
+        ALE.getScreen!(game.ale, game.screen)
 
         # show it?
         show_screen && display(game)
 
         # request an action
+        game.nframes += 1
         action = onframe(game, player)
+        info("Action: $action")
 
-        # give a reward
-        reward = act(game.ale, action)
-        onreward(game, player, reward)
+        # get a reward
+        game.reward = ALE.act(game.ale, action)
+        game.score += game.reward
+
+        # check for a death
+        lives_remaining = ALE.lives(game.ale)
+        game.died = lives_remaining < game.lives
+        game.lives = lives_remaining
+
+        # now return the reward
+        onreward(game, player)
 
         # game over?
-        if game_over(game.ale)
+        if ALE.game_over(game.ale)
             game.state = Finished
         end
     end
