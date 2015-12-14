@@ -27,9 +27,10 @@ play(game, RandomPlayer())
 Subtype AbstractPlayer and implement a few methods:
 
 ```
-type RandomPlayer <: AbstractPlayer end
-Base.reset(player::RandomPlayer) = nothing
-onreward(game::Game, player::RandomPlayer) = nothing
-onframe(game::Game, player::RandomPlayer) = rand(ALE.getMinimalActionSet(game.ale))
-ongameover(game::Game, player::RandomPlayer) = info("Game Over.  $game")
+type MyPlayer <: AbstractPlayer end
+Base.reset(player::MyPlayer) = nothing
+onstart(game::Game,  player::MyPlayer) = info("Starting: $game")
+onreward(game::Game, player::MyPlayer) = nothing
+onframe(game::Game,  player::MyPlayer) = rand(ALE.getMinimalActionSet(game.ale))
+onfinish(game::Game, player::MyPlayer) = info("Game Over.  $game")
 ```

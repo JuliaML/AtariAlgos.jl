@@ -32,7 +32,7 @@ Maintains the reference to a ALE rom object. Loads a ROM on construction.
 You should `close(game)` explicitly.
 """
 type Game
-    ale::ALEPtr
+    ale::ALE.ALEPtr
     state::GameState
     lives::Int
     died::Bool
@@ -89,40 +89,31 @@ end
 A player (automated, or not) which will play the game.  Should implement the following:
 
 ```
-Base.reset(player::MyPlayer) --> nothing
-onreward(game::Game, player::MyPlayer, reward) --> nothing
-onframe(game::Game, player::MyPlayer) --> action
-ongameover(game::Game, player::MyPlayer) --> nothing
+Base.reset(player::MyPlayer)            --> nothing
+onstart(game::Game,  player::MyPlayer)  --> nothing
+onreward(game::Game, player::MyPlayer)  --> nothing
+onframe(game::Game,  player::MyPlayer)  --> ale_action
+onfinish(game::Game, player::MyPlayer)  --> nothing
 ```
 """
 abstract AbstractPlayer
 
 Base.reset(player::AbstractPlayer)              = info("onreset: $player")
+onstart(game::Game, player::AbstractPlayer)     = info("onstart: $game $player")
 onreward(game::Game, player::AbstractPlayer)    = info("onreward: $game $player")
 onframe(game::Game, player::AbstractPlayer)     = info("onframe: $game $player")
-ongameover(game::Game, player::AbstractPlayer)  = info("ongameover: $game $player")
+onfinish(game::Game, player::AbstractPlayer)    = info("onfinish: $game $player")
 
 # -----------------------------------------------
 
 "Takes random actions... useful to see how to implement your own"
-type RandomPlayer <: AbstractPlayer
-    # reward::Float64  # the last reward
-    # score::Float64
-    # nframes::Int
-end
-# RandomPlayer() = RandomPlayer(0.0, 0.0, 0)
-
-# function Base.reset(player::RandomPlayer)
-#     # player.reward = 0.0
-#     # player.score = 0.0
-#     # player.nframes = 0
-# end
+type RandomPlayer <: AbstractPlayer end
 
 function onreward(game::Game, player::RandomPlayer)
-    # player.reward = reward
-    # player.score += reward
     if game.died
         info("DIED: $game $player")
+    elseif game.reward != 0
+        info("REWARD: $game $player")
     end
 end
 
@@ -130,10 +121,6 @@ end
 function onframe(game::Game, player::RandomPlayer)
     rand(ALE.getMinimalActionSet(game.ale))
 end
-
-# function ongameover(game::Game, player::RandomPlayer)
-#     # info("Game Over.  NumFrames: $(player.nframes) Score: $(player.score)")
-# end
 
 # -----------------------------------------------
 
@@ -153,6 +140,7 @@ function play(game::Game, player::AbstractPlayer; show_screen::Bool = true)
     # initialize
     game.state = Running
     game.lives = ALE.lives(game.ale)
+    onstart(game, player)
 
     # play the game
     while game.state == Running
@@ -165,7 +153,7 @@ function play(game::Game, player::AbstractPlayer; show_screen::Bool = true)
         # request an action
         game.nframes += 1
         action = onframe(game, player)
-        info("Action: $action")
+        # info("Action: $action")
 
         # get a reward
         game.reward = ALE.act(game.ale, action)
@@ -185,7 +173,7 @@ function play(game::Game, player::AbstractPlayer; show_screen::Bool = true)
         end
     end
 
-    ongameover(game, player)
+    onfinish(game, player)
 end
 
 # -----------------------------------------------
