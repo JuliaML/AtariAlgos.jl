@@ -29,8 +29,8 @@ Subtype AbstractPlayer and implement a few methods:
 ```
 type MyPlayer <: AbstractPlayer end
 Base.reset(player::MyPlayer) = nothing
-onstart(game::Game,  player::MyPlayer) = info("Starting: $game")
-onreward(game::Game, player::MyPlayer) = nothing
-onframe(game::Game,  player::MyPlayer) = rand(ALE.getMinimalActionSet(game.ale))
-onfinish(game::Game, player::MyPlayer) = info("Game Over.  $game")
+AtariAlgos.onstart(game::Game,  player::MyPlayer) = info("Starting: $game")
+AtariAlgos.onreward(game::Game, player::MyPlayer) = nothing
+AtariAlgos.onframe(game::Game,  player::MyPlayer) = rand(ALE.getMinimalActionSet(game.ale))
+AtariAlgos.onfinish(game::Game, player::MyPlayer) = info("Game Over.  $game")
 ```
