@@ -2,6 +2,9 @@ module AtariAlgos
 
 import ArcadeLearningEnvironment
 const ALE = ArcadeLearningEnvironment
+
+using Reexport
+@reexport using Reinforce
 using Plots
 
 # try
@@ -33,7 +36,7 @@ rom_directory() = joinpath(dirname(@__FILE__), "..", "deps", "rom_files")
 Maintains the reference to a ALE rom object. Loads a ROM on construction.
 You should `close(game)` explicitly.
 """
-type Game
+type Game <: AbstractEnvironment
     ale::ALE.ALEPtr
     state::GameState
     lives::Int
@@ -84,6 +87,8 @@ function Base.reset(game::Game)
     game.nframes = 0
 end
 
+
+# a Plots recipe which builds an "image" plot from the game screen
 @recipe function f(game::Game)
     ticks := nothing
     foreground_color_border := nothing
