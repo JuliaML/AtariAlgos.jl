@@ -1,18 +1,25 @@
-using AtariAlgos
-using Base.Test
 
-# write your own tests here
+using Base.Test
 @test 1 == 1
 
+using AtariAlgos
+using Plots
+gr(size=(200,300))
 
+rewards = Float64[]
+gamename = "breakout"
+game = Game(gamename)
+policy = RandomPolicy()
+ep = Episode(game, policy)
 
-game = Game("breakout")
-player = RandomPlayer()
-
-numEpisodes = 1
-for i in 1:numEpisodes
-    play(game, player)
-end
+@gif for sars in ep
+	push!(rewards, sars[3])
+	plot(
+		plot(game, yguide=gamename),
+		sticks(rewards, leg=false, yguide="rewards", yticks=nothing),
+		layout=@layout [a;b{0.2h}]
+	)
+end every 10
 
 # #####################################################################
 # # modeled on the README from ArcadeLearningEnvironment.jl

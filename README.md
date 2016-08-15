@@ -4,33 +4,45 @@
 
 [![Build Status](https://travis-ci.org/tbreloff/AtariAlgos.jl.svg?branch=master)](https://travis-ci.org/tbreloff/AtariAlgos.jl)
 
-Higher level framework for interacting with the [ArcadeLearningEnvironment](https://github.com/nowozin/ArcadeLearningEnvironment.jl).
+AtariAlgos wraps the [ArcadeLearningEnvironment](https://github.com/nowozin/ArcadeLearningEnvironment.jl) as an implementation of an `AbstractEnvironment` from the [Reinforce interface](https://github.com/tbreloff/Reinforce.jl).  This allows it to be used as a plug-and-play module with general reinforcement learning agents.
 
-### Install
+A large selection of ROMs are downloaded as part of the build process.  Setup is generally as easy as:
 
-Follow the setup instructions for ArcadeLearningEnvironment.jl, then:
-
+```julia
+Pkg.add("ArcadeLearningEnvironment")
+Pkg.clone("https://github.com/tbreloff/AtariAlgos.jl")
+Pkg.build("AtariAlgos")
 ```
-Pkg.clone("https://github.com/tbreloff/AtariAlgos.jl.git")
-```
+
+Games can also be "plotted" using [Plots.jl](https://juliaplots.github.io/), allowing it to be a component of more complex visualizations for tracking learning progress and more, as well as making it easy to create animations.
+
 
 ### Example
 
-```
+```julia
 using AtariAlgos
-game = Game("/home/tom/atari/Breakout.bin")
-play(game, RandomPlayer())
+
+# construct a game of Breakout, and initialize an Episode iterator with a random policy
+gamename = "breakout"
+game = Game(gamename)
+policy = RandomPolicy()
+ep = Episode(game, policy)
+
+# set up for plotting
+using Plots
+gr(size=(200,300))
+rewards = Float64[]
+
+# run the episode using the Episode iterator, creating an animated gif in the process
+@gif for sars in ep
+	push!(rewards, sars[3])
+	plot(
+		plot(game, yguide=gamename),
+		sticks(rewards, leg=false, yguide="rewards", yticks=nothing),
+		layout=@layout [a;b{0.2h}]
+	)
+end every 10
 ```
 
-### Create your own player
+![](https://cloud.githubusercontent.com/assets/933338/17670982/8923a2f6-62e2-11e6-943f-bd0a2a7b5c1f.gif)
 
-Subtype AbstractPlayer and implement a few methods:
-
-```
-type MyPlayer <: AbstractPlayer end
-Base.reset(player::MyPlayer) = nothing
-AtariAlgos.onstart(game::Game,  player::MyPlayer) = info("Starting: $game")
-AtariAlgos.onreward(game::Game, player::MyPlayer) = nothing
-AtariAlgos.onframe(game::Game,  player::MyPlayer) = rand(ALE.getMinimalActionSet(game.ale))
-AtariAlgos.onfinish(game::Game, player::MyPlayer) = info("Game Over.  $game")
-```
