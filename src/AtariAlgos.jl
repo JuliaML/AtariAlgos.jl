@@ -192,7 +192,7 @@ end
 # Base.done(game::Game) = !game.running
 
 Base.done(game::Game) = ALE.game_over(game.ale)
-Reinforce.actions(game::Game, s) = DiscreteActionSet(ALE.getMinimalActionSet(game.ale))
+Reinforce.actions(game::Game, s) = DiscreteSet(ALE.getMinimalActionSet(game.ale))
 
 
 # "This is the main loop for one game (episode)"
