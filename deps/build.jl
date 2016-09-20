@@ -21,7 +21,7 @@ if !isdir(romdir)
 	for fn in readdir(romdir)
 		newfn = lowercase(fn)
 		if newfn != fn
-			mv(joinpath(romdir, fn), joinpath(romdir, newfn))
+			mv(joinpath(romdir, fn), joinpath(romdir, newfn), remove_destination = true)
 		end
 	end
 end
@@ -41,4 +41,3 @@ for (name,pkg) in [("JuliaML","Learn"),
 		Pkg.build(pkg)
 	end
 end
-
