@@ -2,15 +2,15 @@
 
 #### Author: Thomas Breloff (@tbreloff)
 
-[![Build Status](https://travis-ci.org/tbreloff/AtariAlgos.jl.svg?branch=master)](https://travis-ci.org/tbreloff/AtariAlgos.jl)
+[![Build Status](https://travis-ci.org/JuliaML/AtariAlgos.jl.svg?branch=master)](https://travis-ci.org/JuliaML/AtariAlgos.jl)
 
-AtariAlgos wraps the [ArcadeLearningEnvironment](https://github.com/nowozin/ArcadeLearningEnvironment.jl) as an implementation of an `AbstractEnvironment` from the [Reinforce interface](https://github.com/tbreloff/Reinforce.jl).  This allows it to be used as a plug-and-play module with general reinforcement learning agents.
+AtariAlgos wraps the [ArcadeLearningEnvironment](https://github.com/nowozin/ArcadeLearningEnvironment.jl) as an implementation of an `AbstractEnvironment` from the [Reinforce interface](https://github.com/JuliaML/Reinforce.jl).  This allows it to be used as a plug-and-play module with general reinforcement learning agents.
 
 A large selection of ROMs are downloaded as part of the build process.  Setup is generally as easy as:
 
 ```julia
 Pkg.add("ArcadeLearningEnvironment")
-Pkg.clone("https://github.com/tbreloff/AtariAlgos.jl")
+Pkg.clone("https://github.com/JuliaML/AtariAlgos.jl")
 Pkg.build("AtariAlgos")
 ```
 

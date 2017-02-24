@@ -28,18 +28,18 @@ if !isdir(romdir)
     end
 end
 
-# grab unregistered dependencies
-for (name,pkg) in [("JuliaML","Learn"),
-                   ("tbreloff", "Reinforce")]
-    try
-        avail = Pkg.available(pkg)
-        if !isempty(avail)
-            # this is a registered package!
-            warn("$pkg is registered in METADATA... it shouldn't be in $(@__FILE__)")
-        end
-    catch
-        # install it
-        Pkg.clone("https://github.com/$name/$pkg.jl")
-        Pkg.build(pkg)
-    end
-end
+# # grab unregistered dependencies
+# for (name,pkg) in [("JuliaML","Learn"),
+#                    ("JuliaML", "Reinforce")]
+#     try
+#         avail = Pkg.available(pkg)
+#         if !isempty(avail)
+#             # this is a registered package!
+#             warn("$pkg is registered in METADATA... it shouldn't be in $(@__FILE__)")
+#         end
+#     catch
+#         # install it
+#         Pkg.clone("https://github.com/$name/$pkg.jl")
+#         Pkg.build(pkg)
+#     end
+# end
