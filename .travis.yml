@@ -11,6 +11,9 @@ matrix:
 notifications:
   email: true
 # uncomment the following lines to override the default test script
+env:
+  global:
+    DOWNLOADROMS=true
 #script:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 #  - julia -e 'Pkg.clone(pwd()); Pkg.build("AtariAlgos"); Pkg.test("AtariAlgos"; coverage=true)'

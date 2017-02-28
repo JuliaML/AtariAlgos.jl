@@ -6,6 +6,10 @@ using AtariAlgos
 # using Plots
 # gr(size=(200,300))
 
+if get(ENV, "DOWNLOADROMS", false) == "true"
+    AtariAlgos.download_roms()
+end
+
 rewards = Float64[]
 gamename = "breakout"
 game = AtariEnv(gamename)
