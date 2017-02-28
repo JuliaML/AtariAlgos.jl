@@ -9,7 +9,7 @@ using Plots
 
 export
     ALE,
-    Game
+    AtariEnv
 
 rom_directory() = joinpath(dirname(@__FILE__), "..", "deps", "rom_files")
 
@@ -19,7 +19,7 @@ rom_directory() = joinpath(dirname(@__FILE__), "..", "deps", "rom_files")
 Maintains the reference to a ALE rom object. Loads a ROM on construction.
 You should `close(game)` explicitly.
 """
-type Game <: AbstractEnvironment
+type AtariEnv <: AbstractEnvironment
     ale::ALE.ALEPtr
     lives::Int
     died::Bool
@@ -32,7 +32,7 @@ type Game <: AbstractEnvironment
     state::Vector{Float64}  # the game state... raw screen data converted to Float64
     screen::Matrix{RGB{Float64}}
 
-    function Game(romfile::AbstractString)
+    function AtariEnv(romfile::AbstractString)
         if !isfile(romfile)
             oldromfile = romfile
             romfile = joinpath(rom_directory(), lowercase(romfile) * ".bin")
@@ -51,10 +51,10 @@ type Game <: AbstractEnvironment
     end
 end
 
-Base.string(game::Game) = "Game($(game.state)){lives=$(game.lives), died=$(game.died), reward=$(game.reward), score=$(game.score), nframe=$(game.nframes)}"
-Base.print(io::IO, game::Game) = print(io, string(game))
+Base.string(game::AtariEnv) = "AtariEnv($(game.state)){lives=$(game.lives), died=$(game.died), reward=$(game.reward), score=$(game.score), nframe=$(game.nframes)}"
+Base.print(io::IO, game::AtariEnv) = print(io, string(game))
 
-function Base.close(game::Game)
+function Base.close(game::AtariEnv)
     game.state = Closed
     ALE.ALE_del(game.ale)
 end
@@ -63,7 +63,7 @@ end
 # -----------------------------------------------
 # display/plot
 
-function update_screen(game::Game)
+function update_screen(game::AtariEnv)
     idx = 1
     for i in 1:game.height, j in 1:game.width
         game.screen[i,j] = RGB{Float64}(game.state[idx], game.state[idx+1], game.state[idx+2])
@@ -73,7 +73,7 @@ function update_screen(game::Game)
 end
 
 # a Plots recipe which builds an "image" plot from the game screen
-@recipe function f(game::Game)
+@recipe function f(game::AtariEnv)
     ticks := nothing
     foreground_color_border := nothing
     grid := false
@@ -90,7 +90,7 @@ const _canvas = Ref{Any}(nothing)
 # but I've found Tk to be horribly buggy and prone to crashing my system, so
 # it's not active right now.
 
-# function Base.display(game::Game)
+# function Base.display(game::AtariEnv)
 #     screen = update_screen(game)
 #     if _canvas[] == nothing
 #         @eval import ImageView
@@ -103,7 +103,7 @@ const _canvas = Ref{Any}(nothing)
 
 # -----------------------------------------------
 
-function update_state(game::Game)
+function update_state(game::AtariEnv)
     # get the raw screen data
     ALE.getScreenRGB(game.ale, game.rawscreen)
     for i in eachindex(game.rawscreen)
@@ -113,7 +113,7 @@ function update_state(game::Game)
     game.state
 end
 
-function Reinforce.reset!(game::Game)
+function Reinforce.reset!(game::AtariEnv)
     ALE.reset_game(game.ale)
     game.lives = 0
     game.died = false
@@ -123,16 +123,54 @@ function Reinforce.reset!(game::Game)
     update_state(game)
 end
 
-function Reinforce.step!(game::Game, s, a)
+function Reinforce.step!(game::AtariEnv, s, a)
     # act and get the reward and new state
     game.reward = ALE.act(game.ale, a)
     game.score += game.reward
     game.reward, update_state(game)
 end
 
-Reinforce.finished(game::Game, s′) = ALE.game_over(game.ale)
-Reinforce.actions(game::Game, s) = DiscreteSet(ALE.getMinimalActionSet(game.ale))
+Reinforce.finished(game::AtariEnv, s′) = ALE.game_over(game.ale)
+Reinforce.actions(game::AtariEnv, s) = DiscreteSet(ALE.getMinimalActionSet(game.ale))
 
 # -----------------------------------------------
+
+function download_roms(ask::Bool = true)
+    if ask
+        warn("This function will download Atari roms... you take all responsibility for what the function does.  Type 'OK' if you agree.")
+        if chomp(readline()) != "OK"
+            return
+        end
+    end
+
+    dir = dirname(@__FILE__)
+    romdir = joinpath(dir, "..", "deps", "rom_files")
+    if !isdir(romdir)
+        mkdir(romdir)
+
+        # download and unzip the roms, then cleanup zips
+        urlbase = "http://www.atariage.com/2600/emulation/RomPacks/"
+        for fn in ["Atari2600_A-E.zip",
+                   "Atari2600_F-J.zip",
+                   "Atari2600_K-P.zip",
+                   "Atari2600_Q-S.zip",
+                   "Atari2600_T-Z.zip"]
+            localfn = joinpath(romdir, fn)
+            download(urlbase*fn, localfn)
+            run(`unzip -u $localfn -d $romdir`)
+            rm(localfn)
+        end
+
+        # rename all to lowercase letters
+        for fn in readdir(romdir)
+            newfn = lowercase(fn)
+            if newfn != fn
+                try
+                    mv(joinpath(romdir, fn), joinpath(romdir, newfn))
+                end
+            end
+        end
+    end
+end
 
 end # module

@@ -6,15 +6,20 @@
 
 AtariAlgos wraps the [ArcadeLearningEnvironment](https://github.com/nowozin/ArcadeLearningEnvironment.jl) as an implementation of an `AbstractEnvironment` from the [Reinforce interface](https://github.com/JuliaML/Reinforce.jl).  This allows it to be used as a plug-and-play module with general reinforcement learning agents.
 
-A large selection of ROMs are downloaded as part of the build process.  Setup is generally as easy as:
+Setup:
 
 ```julia
-Pkg.add("ArcadeLearningEnvironment")
 Pkg.clone("https://github.com/JuliaML/AtariAlgos.jl")
-Pkg.build("AtariAlgos")
 ```
 
-Games can also be "plotted" using [Plots.jl](https://juliaplots.github.io/) through a simple definition of a [recipe](https://juliaplots.github.io/recipes/) for `Game` objects, allowing it to be a component of more complex visualizations for tracking learning progress and more, as well as making it easy to create animations.
+(Optional) Download roms:
+
+```julia
+using AtariAlgos
+AtariAlgos.download_roms()
+```
+
+Games can also be "plotted" using [Plots.jl](https://juliaplots.github.io/) through a simple definition of a [recipe](https://juliaplots.github.io/recipes/) for `AtariEnv` objects, allowing it to be a component of more complex visualizations for tracking learning progress and more, as well as making it easy to create animations.
 
 
 ### Example
@@ -23,10 +28,11 @@ Games can also be "plotted" using [Plots.jl](https://juliaplots.github.io/) thro
 using AtariAlgos
 
 # construct a game of Breakout
-game = Game("breakout")
+game = AtariEnv("breakout")
 
 # set up for plotting
-using Plots; gr(size=(200,300), leg=false)
+using Plots
+gr(size=(200,300), leg=false)
 rewards = Float64[]
 
 # run the episode using the Episode iterator, creating an animated gif in the process
