@@ -1,6 +1,6 @@
 ## AtariAlgos
 
-#### Author: Thomas Breloff (@tbreloff)
+#### Author: [Thomas Breloff](https://github.com/tbreloff)
 
 [![Build Status](https://travis-ci.org/JuliaML/AtariAlgos.jl.svg?branch=master)](https://travis-ci.org/JuliaML/AtariAlgos.jl)
 
