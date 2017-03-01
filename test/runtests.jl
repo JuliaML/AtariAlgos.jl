@@ -7,7 +7,7 @@ using AtariAlgos
 # gr(size=(200,300))
 
 if get(ENV, "DOWNLOADROMS", false) == "true"
-    AtariAlgos.download_roms()
+    AtariAlgos.download_roms(false)
 end
 
 rewards = Float64[]
