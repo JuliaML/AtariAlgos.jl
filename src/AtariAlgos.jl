@@ -19,7 +19,7 @@ rom_directory() = joinpath(dirname(@__FILE__), "..", "deps", "rom_files")
 Maintains the reference to a ALE rom object. Loads a ROM on construction.
 You should `close(game)` explicitly.
 """
-type AtariEnv <: AbstractEnvironment
+mutable struct AtariEnv <: AbstractEnvironment
     ale::ALE.ALEPtr
     lives::Int
     died::Bool
@@ -167,6 +167,7 @@ function download_roms(ask::Bool = true)
             if newfn != fn
                 try
                     mv(joinpath(romdir, fn), joinpath(romdir, newfn))
+                catch
                 end
             end
         end
