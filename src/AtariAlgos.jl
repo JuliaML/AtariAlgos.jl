@@ -44,8 +44,8 @@ mutable struct AtariEnv <: AbstractEnvironment
         ALE.loadROM(ale, romfile)
         w = ALE.getScreenWidth(ale)
         h = ALE.getScreenHeight(ale)
-        rawscreen = Array(Cuchar, w * h * 3)
-        state = Array(Float64, length(rawscreen))
+        rawscreen = Array{Cuchar}(undef, w * h * 3)
+        state = similar(rawscreen, Float64)
         screen = fill(RGB{Float64}(0,0,0), h, w)
         new(ale, 0, false, 0., 0., 0, w, h, rawscreen, state, screen)
     end
@@ -132,46 +132,5 @@ end
 
 Reinforce.finished(game::AtariEnv, s′) = ALE.game_over(game.ale)
 Reinforce.actions(game::AtariEnv, s) = DiscreteSet(ALE.getMinimalActionSet(game.ale))
-
-# -----------------------------------------------
-
-function download_roms(ask::Bool = true)
-    if ask
-        warn("This function will download Atari roms... you take all responsibility for what the function does.  Type 'OK' if you agree.")
-        if chomp(readline()) != "OK"
-            return
-        end
-    end
-
-    dir = dirname(@__FILE__)
-    romdir = joinpath(dir, "..", "deps", "rom_files")
-    if !isdir(romdir)
-        mkdir(romdir)
-
-        # download and unzip the roms, then cleanup zips
-        urlbase = "http://www.atariage.com/2600/emulation/RomPacks/"
-        for fn in ["Atari2600_A-E.zip",
-                   "Atari2600_F-J.zip",
-                   "Atari2600_K-P.zip",
-                   "Atari2600_Q-S.zip",
-                   "Atari2600_T-Z.zip"]
-            localfn = joinpath(romdir, fn)
-            download(urlbase*fn, localfn)
-            run(`unzip -u $localfn -d $romdir`)
-            rm(localfn)
-        end
-
-        # rename all to lowercase letters
-        for fn in readdir(romdir)
-            newfn = lowercase(fn)
-            if newfn != fn
-                try
-                    mv(joinpath(romdir, fn), joinpath(romdir, newfn))
-                catch
-                end
-            end
-        end
-    end
-end
 
 end # module
