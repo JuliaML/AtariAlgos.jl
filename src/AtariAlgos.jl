@@ -105,7 +105,7 @@ const _canvas = Ref{Any}(nothing)
 
 function update_state(game::AtariEnv)
     # get the raw screen data
-    ALE.getScreenRGB(game.ale, game.rawscreen)
+    ALE.getScreenRGB!(game.ale, game.rawscreen)
     for i in eachindex(game.rawscreen)
         game.state[i] = game.rawscreen[i] / 256
     end
