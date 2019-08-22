@@ -1,6 +1,0 @@
-julia 0.5
-
-Reexport
-ArcadeLearningEnvironment
-Plots
-Reinforce
