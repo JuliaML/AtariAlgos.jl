@@ -2,3 +2,5 @@
 *.jl.*.cov
 *.jl.mem
 deps/rom_files
+deps/build.log
+/Manifest.toml
